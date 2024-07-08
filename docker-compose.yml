@@ -1,0 +1,20 @@
+version: '3'
+services:
+  app:
+    image: 'my_node_app'
+    build: .
+    volumes:
+      - .:/app          # Mount the current directory to /app in the container
+      - /app/node_modules
+    working_dir: /app
+    ports:
+      - "3001:3000"
+    environment:
+      - OUTLOOK_AUth_URL=https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+      - OUTLOOK_TOKEN_URL=https://login.microsoftonline.com/common/oauth2/v2.0/token
+      - OUTLOOK_DELTA_URL=https://graph.microsoft.com/v1.0/me/mailFolders('inbox')/messages/delta 
+      - OUTLOOK_CALL_BACKURL=http://localhost:3001/auth/outlook/callback
+      - OUTLOOK_PROFILE_URL=https://graph.microsoft.com/v1.0/me
+      - OUTLOOK_SCOPE=['openid', 'profile', 'email', 'https://graph.microsoft.com/mail.read','https://graph.microsoft.com/Mail.ReadWrite','https://graph.microsoft.com/MailboxSettings.Read','https://graph.microsoft.com/MailboxSettings.ReadWrite', 'User.Read']
+      - PASS_REQ_TO_CALLBACK=true
+    command: nodemon server

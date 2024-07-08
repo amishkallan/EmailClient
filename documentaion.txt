@@ -1,0 +1,15 @@
+Setup to run the app
+I Run elatocsearch backend
+    1. Come to root folder of the app
+    2. run command cd elasticsearch
+    3. run docker-compose up
+        now your elasticsearch db will be running in port 9200
+II Run the email client node app
+    1. Come to the root folder of the app
+    2. run docker compose up
+        now your node app will be running at localhost:3001
+
+App Workflow:
+    1. Click the button 'Connect Outlook'
+    2. Outlook Authentication window will be opened.
+    3. 

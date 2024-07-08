@@ -1,0 +1,177 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Email Client</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <div class="jumbotron text-center">
+    <h1>Email Client</h1>
+    <p>connect your outlook account to view your emails here!</p> 
+    <!-- <a id = 'fetchLink' href="/auth/outlook">Connect Outlook</a> -->
+    <button onclick=callApi() class="btn btn-primary">Connect Outlook</button>
+    <button onclick=fetchEmails() class="btn btn-primary" >Refresh</button>
+    <button onclick=logout() class="btn btn-info">logout</button>
+    <h2 id = 'user-info'>Hey, Pls login</h2>
+  </div>
+  <div>
+    <table id="email-table" class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">Subject</th>
+          <th scope="col">sender</th>
+          <th scope="col">Opened</th>
+          <th scope="col">Flagged</th>
+          <th scope="col">Received</th>
+        </tr>
+      </thead>
+      
+    </table>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    function displayName(){
+      // Display user info if available in the cookie
+      try {
+        const userCookie = getCookie('userprofile');
+        if (userCookie) {
+          const user = JSON.parse(decodeURIComponent(userCookie));
+          document.getElementById('user-info').innerText = 'Welcome, ' + user.displayName;
+        } else {
+          document.getElementById('user-info').innerText = 'Hey, Pls login';
+        }
+      }catch (error){
+        alert('User not logged in');
+      }
+    }
+
+    function callApi(){
+      window.location.href = '/auth/outlook';
+    }
+
+    async function fetchStatus() {
+      const res = await fetch('/status');
+      const status = await res.json();
+      document.getElementById('sync-status').innerText = status;
+    }
+
+    // Function to generate table rows
+    const generateTableRows = (emailList) => {
+
+      return emailList.map(row => `
+        <tr>
+          <th scope="row">${row.subject == ''?'(No Subject)' : row.subject}</th>
+          <td>${row.sender.emailAddress.name}</td>
+          <td>${row.isRead ? 'Read' : 'Unread'}</td>
+          <td>${row.flag}</td>
+          <td>${new Date(row.receivedDateTime).toLocaleString()}</td>
+          <td>${row.isDeleted ? 'Deleted' : 'Not Deleted'}</td>
+        </tr>`).join('');
+    };
+
+    async function fetchEmails() {
+      try{
+        console.log("starting fetch emails")
+        const token = getCookie('accessToken');
+        const emailId = getCookie('userId')
+        console.log("token : ", token)
+        const res = await fetch('/emails', {
+            method: 'GET',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'email': emailId
+            }
+          }); 
+        const emails = await res.json();
+        console.log("emails : ", emails)
+        const emailTableEle = document.getElementById('email-table');
+        const generateTable = (emails) =>{
+          console.log("inner tag : ", emails)
+          return `
+          <thead class="thead-light">
+            <tr>
+              <th scope="col">Subject</th>
+              <th scope="col">sender</th>
+              <th scope="col">Opened</th>
+              <th scope="col">Flagged</th>
+              <th scope="col">Received</th>
+              <th scope="col">Deleted</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${generateTableRows(emails)}
+          </tbody>`
+        }
+        // console.log("generateTable(data) :", generateTable(emails))
+        emailTableEle.innerHTML = generateTable(emails);
+      }catch (error){
+        console.log("emails got into error")
+        alert('User not logged in. Please Login via Outlook');
+        return `
+          <thead class="thead-light">
+            <tr>
+              <th scope="col">Subject</th>
+              <th scope="col">sender</th>
+              <th scope="col">Opened</th>
+              <th scope="col">Flagged</th>
+              <th scope="col">Received</th>
+              <th scope="col">Deleted</th>
+            </tr>
+          </thead>
+            `
+      }
+    }
+
+    function logout(){
+      fetch('/logout');
+      window.location.href = '/';
+    }
+
+    // function syncdata(){
+    //   fetch('/sync');
+    // }
+    // fetchStatus();
+    displayName();
+    // fetchEmails();
+    // syncdata();
+
+    async function fetchData() {
+      const token = getCookie('accessToken');
+      if (!token) {
+        document.getElementById('data').innerText = 'Access token not available';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/data', {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok ' + response.statusText);
+        }
+
+        const data = await response.json();
+        document.getElementById('data').innerText = JSON.stringify(data, null, 2);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        document.getElementById('data').innerText = 'Error fetching data: ' + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
