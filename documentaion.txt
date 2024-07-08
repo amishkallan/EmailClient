@@ -6,10 +6,34 @@ I Run elatocsearch backend
         now your elasticsearch db will be running in port 9200
 II Run the email client node app
     1. Come to the root folder of the app
-    2. run docker compose up
+    2. add the app.config.js (shared by mail) file to the root folder
+    3. run: docker build -t my_node_app .
+        this will build app image
+    4. run: docker compose up
         now your node app will be running at localhost:3001
 
 App Workflow:
     1. Click the button 'Connect Outlook'
     2. Outlook Authentication window will be opened.
-    3. 
+    3. Complete the Oauth by giving outlook email
+    4. After completion you will redirected to the logged in page
+    5. App in bakground will sync your outlook email with elasticsearch db
+    6. Click refresh button: This will sync all changes to your elasticsearch db
+     You can see all the emails in the UI
+    7. ON click of refresh button, emails will be sync with Outlook
+
+How It works
+    1. On sign up to the app, 
+    2. User profile will created in elasticsearch db
+    3. current state of outlook db will be stored as a 'delta_url' in userprofile
+    4. emails with a batch size of 3( configurable )  will be pulled from outlook.
+    5. each batch will be dumped to the elasticsearch db.
+    6. using 'delta_url' the log of changes to the outlook, will be pulled
+    7. these changes will be made to the elasticsearch db to get the latest outlook email state.
+    8. current state of outlook db state will be stored in userprofile again as 'delta_url'
+    
+On refresh
+    1.  using 'delta_url' the log of changes to the outlook, will be pulled
+    2. these changes will be made to the elasticsearch db to get the latest outlook email state.
+    3. current state of outlook db state will be stored in userprofile again as 'delta_url'
+
