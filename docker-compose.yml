@@ -1,7 +1,7 @@
 version: '3'
 services:
   app:
-    image: 'my_node_app'
+    image: 'my_node_app_git'
     build: .
     volumes:
       - .:/app          # Mount the current directory to /app in the container

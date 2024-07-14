@@ -7,7 +7,7 @@ I Run elatocsearch backend
 II Run the email client node app
     1. Come to the root folder of the app
     2. add the app.config.js (shared by mail) file to the root folder
-    3. run: docker build -t my_node_app .
+    3. run: docker build -t my_node_app_git .
         this will build app image
     4. run: docker compose up
         now your node app will be running at localhost:3001
