@@ -68,48 +68,7 @@ passport.use('outlook', new OAuth2Strategy({
 async (req, accessToken, refreshToken, profile, done) => {
   // fetch user profile infos from microsoft
   req.token = accessToken  
-  console.log("profileurl : ", msprofileurl)
-  const userProfileResponse = await axios.get(msprofileurl, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-    const userProfile = userProfileResponse.data;
-    const userEmail = userProfileResponse.data.mail
-    const userESdata = {
-                        email : userProfileResponse.data.mail,
-                        id : userProfileResponse.data.id,
-                        name : userProfileResponse.data.displayName,
-                        accessToken : accessToken,
-                        deltaLogToken : ""
-                        }
-
-    // add user to es db if not already existing
-    const isUserExist = await DbClient.getUser(userESdata.email)
-    if ( isUserExist==0){
-
-      // fetch all emails of the user and add it to es bacEkend
-      resultObj = await fetchAllEmails(userESdata.accessToken)
-      const allEmails = resultObj["emails"]
-      userESdata.deltaLink = resultObj["deltaLink"]
-      
-      if (allEmails!= false){
-        console.log("going to add all emails to es db")
-        // DbClient.addAllUserEmails(allEmails, userEmail)
-        await FirstTimeSyncEmails(userEmail, userESdata.deltaLink, accessToken)
-      }
-
-      // add user to es db
-      await DbClient.addUser(userESdata)
-      
-    }
-    else{
-      // save accesToken
-      await DbClient.addUserAccessToken(userESdata.email, accessToken )
-    }
-
-  done(null, { id: "body._id", userProfile: userProfile, token : accessToken });
+  done(null , {id: "body._id", token : accessToken })
 }));
 
 passport.serializeUser((user, done) => done(null, user));

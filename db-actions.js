@@ -24,8 +24,8 @@ class DbClient extends Client{
             });
         
             // Check if there is at least one hit
-            console.log('es return body : ', body)
-            console.log("body.hits.total.value : ", body.hits.total.value)
+            // console.log('es return body : ', body)
+            // console.log("body.hits.total.value : ", body.hits.total.value)
             if (body.hits.total.value > 0){
                 return body.hits.hits[0]
             }else{
@@ -46,7 +46,8 @@ class DbClient extends Client{
                 name : user.name,
                 accessToken : user.accessToken,
                 deltaLink : user.deltaLink,
-                emailLastUpdateTime : new Date()
+                emailLastUpdateTime : new Date(),
+                InsertStatus:0
 
             },
         });
@@ -60,7 +61,7 @@ class DbClient extends Client{
     async addAllUserEmails(allEmails, userEmailId) {
         try {
             for (const email of allEmails){
-                await this.addUserEmail(email,userEmailId)
+                await this.addUserMail(email,userEmailId)
             }
        
         console.log("successfully added emails")
@@ -72,7 +73,7 @@ class DbClient extends Client{
     }
     async getAllUserEmails(email){
         try {
-            console.log('came to fetch emails for user : ', email);
+            // console.log('came to fetch emails for user : ', email);
 
             const body  = await this.search({
               index: emailIndex,
@@ -116,7 +117,7 @@ class DbClient extends Client{
             return false;
           }
     }
-    async addUserEmail(email,userEmailId){
+    async addUserMail(email,userEmailId){
         const email_dict = {
             id : email.id,
             userId : userEmailId,
@@ -138,11 +139,11 @@ class DbClient extends Client{
             body: email_dict,
         });
     }
-    async updateUserEmail(updatedEmail,idOfEmail){
+    async updateUserMail(updatedEmail,idOfEmail){
         // check if deleted
         // var updateKey = ''
         // var updateVal = ''
-        console.log("updatedEmail : ", updatedEmail )
+        // console.log("updatedEmail : ", updatedEmail )
         var updateDoc = {}
         if ('@removed' in updatedEmail && updatedEmail['@removed'].reason == 'deleted'){
             updateDoc['isDeleted'] = true
@@ -158,7 +159,7 @@ class DbClient extends Client{
             // updateVal = updatedEmail.flag.flagStatus
         }
         if (Object.keys(updateDoc).length > 0){
-          console.log("updating document : ", updateDoc, ", id : ", idOfEmail)
+          // console.log("updating document : ", updateDoc, ", id : ", idOfEmail)
           const { body: updateResponse } = await this.update({
               index: emailIndex,
               id: idOfEmail,
@@ -166,13 +167,13 @@ class DbClient extends Client{
                 doc: updateDoc
               }
             });
-          console.log('updateUserEmail : Document updated:', updateResponse);
+          // console.log('updateUserMail : Document updated:', updateResponse);
           return true
         }
         return false
         
     }
-    async getUserEmail(outlookEmailId){
+    async getUserMail(outlookEmailId){
         try{
             const body  = await this.search({
                 index:emailIndex,
@@ -186,8 +187,8 @@ class DbClient extends Client{
             });
         
             // Check if there is at least one hit
-            console.log('es return body : ', body)
-            console.log("body.hits.total.value : ", body.hits.total.value)
+            // console.log('es return body : ', body)
+            // console.log("body.hits.total.value : ", body.hits.total.value)
             if (body.hits.total.value > 0){
                 return body.hits.hits[0]
             }else{
@@ -200,7 +201,7 @@ class DbClient extends Client{
     }
     async getUserDeltaLink(email){
         try{
-            console.log("logging from db.deltaLink")
+            // console.log("logging from db.deltaLink", email)
             const body  = await this.search({
                 index: userIndex,
                 body: {
@@ -223,17 +224,49 @@ class DbClient extends Client{
             return false
         }
     }
+
+    async addUserStatus(email, status){
+      // console.log("addUserStatus : came to add Status : ")
+      // console.log("email : ", email, "status : ", status)
+        try {
+            // get user document 
+            const user_data  = await this.getUser(email)
+            // console.log("addUserStatus user_data : ",user_data)
+            if (user_data!= false){
+              //  user is found update its deltaLink 
+              // console.log("addUserStatus : user_data : ", user_data)
+              const docId = user_data._id;
+              // console.log("addUserStatus : docId : ", docId)
+              const { body: updateResponse } = await this.update({
+                index: userIndex,
+                id: docId,
+                body: {
+                  doc: {
+                      InsertStatus: status
+                  }
+                }
+              });
+              // console.log('addUserStatus : Document updated:', updateResponse);
+            }
+            else{
+              console.log("addUserStatus : Error in finding given user ")
+            }
+          } catch (error) {
+            console.error('addUserStatus : Error updating document:', error);
+          }
+    }
+
     async addUserDeltaLink(email, deltaLink){
-      console.log("addUserDeltaLink : came to add delta link : ")
-      console.log("email : ", email, "deltaLink : ", deltaLink)
+      // console.log("addUserDeltaLink : came to add delta link : ")
+      // console.log("email : ", email, "deltaLink : ", deltaLink)
         try {
             // get user document 
             const user_data  = await this.getUser(email)
             if (user_data!= false){
               //  user is found update its deltaLink 
-              console.log("addUserDeltaLink : user_data : ", user_data)
+              // console.log("addUserDeltaLink : user_data : ", user_data)
               const docId = user_data._id;
-              console.log("addUserDeltaLink : docId : ", docId)
+              // console.log("addUserDeltaLink : docId : ", docId)
               const { body: updateResponse } = await this.update({
                 index: userIndex,
                 id: docId,
@@ -243,7 +276,7 @@ class DbClient extends Client{
                   }
                 }
               });
-              console.log('addUserDeltaLink : Document updated:', updateResponse);
+              // console.log('addUserDeltaLink : Document updated:', updateResponse);
             }
             else{
               console.log("addUserDeltaLink : Error in finding given user ")
@@ -255,9 +288,9 @@ class DbClient extends Client{
     async addUserAccessToken(email, accessToken ){
         try{
         // accessToken = "poda"
-        console.log("addUserAccessToken: adding accestoken : ", accessToken)
+        // console.log("addUserAccessToken: adding accestoken : ", accessToken)
         const userDoc = await this.getUser(email)
-        console.log("got user doc from getUser doc : ", userDoc)
+        // console.log("got user doc from getUser doc : ", userDoc)
         if (userDoc) {
             const documentId = userDoc._id;
             const body  = await this.update({
@@ -270,30 +303,30 @@ class DbClient extends Client{
               }
             });
       
-            console.log('Token updated:', body);
+            // console.log('Token updated:', body);
           }
         }catch (error){
             console.log("addUserAccessToken error : ", error)
         }
     }
-    async addOrUpdateUserEmail(userEmailId, updatedEmail){
+    async addOrupdateUserMail(userEmailId, updatedEmail){
         // console.log("addOrUpdateEmail : \n", updatedEmail)
         // get email's _id
-        const currentEmail = await this.getUserEmail(updatedEmail.id)
+        const currentEmail = await this.getUserMail(updatedEmail.id)
         const user_data = await this.getUser(userEmailId)
         // console.log("currentEmail : ", currentEmail)
         if (currentEmail == false){
             if ("body" in updatedEmail){
                 // add it as new email
-                await this.addUserEmail(updatedEmail, userEmailId)
-                console.log("new email added")
+                await this.addUserMail(updatedEmail, userEmailId)
+                // console.log("new email added")
             }
         }
         else{
             // update email
             const idOfEmail = currentEmail._id
-            const status = await this.updateUserEmail(updatedEmail, idOfEmail)
-            console.log("email update status : ", status, ", idOfEmail : ", idOfEmail)
+            const status = await this.updateUserMail(updatedEmail, idOfEmail)
+            // console.log("email update status : ", status, ", idOfEmail : ", idOfEmail)
         }
     }
 }

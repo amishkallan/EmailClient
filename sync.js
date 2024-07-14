@@ -24,7 +24,7 @@ async function syncEmails(user_data) {
         console.log("deltaResponse :  ", data.value)  
       // update email changes to db
     for (const updatedEmail of data.value) {
-        await DbClient.addOrUpdateUserEmail(user_data.email, updatedEmail)
+        await DbClient.addOrupdateUserMail(user_data.email, updatedEmail)
         console.log("############# breaking update email ############")
       }
       // apdate user deltaLink
@@ -39,15 +39,17 @@ async function syncEmails(user_data) {
   }
 }
 
-async function FirstTimeSyncEmails(user_email , deltaLink, accessToken) {
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// function to add All Emails to ES db on first sign up
+// this will be added batch by batchs
+async function FirstTimeSyncEmails(req, res, user_email , deltaLink, accessToken) {
   try{
+    await sleep(2000);
     // fetchdeltaLink
     console.log("came to first time sync email")
-    console.log("user_data : ", user_email)
-    // const allTokens = await DbClient.getUserDeltaLink( user_email)
-    // const deltaLink = allTokens.deltaLink
-    // const accessToken = allTokens.accessToken
-    console.log("Sync : deltaLink : ", deltaLink)
 
     // fetch emails chanes from outlook
     const count_url = 'https://graph.microsoft.com/v1.0/me/messages/$count'
@@ -59,10 +61,13 @@ async function FirstTimeSyncEmails(user_email , deltaLink, accessToken) {
     if (deltaLink!=false){
 
       // req.session.emailInsertStatus = 0
+      let BatchInsetStatus = 0
+      // res.cookie('emailInsertStatus',BatchInsetStatus)
+      await DbClient.addUserStatus(user_email, BatchInsetStatus)
       console.log("status cookie added")
       var next_url = 'https://graph.microsoft.com/v1.0/me/messages?$top='+String(CONST_BATCH_SIZE)
       for (;next_url;){
-        console.log("came to fetch email delta ")
+        // console.log("came to fetch email delta ")
         const {data}= await axios.get(next_url, {
             headers: { Authorization: `Bearer ${accessToken}` }
           });
@@ -73,9 +78,14 @@ async function FirstTimeSyncEmails(user_email , deltaLink, accessToken) {
           
         // console.log("data : ", data)
         next_url = data['@odata.nextLink']
-        console.log(batch_number/batch_total_count*100)
-        // req.session.emailInsertStatus = batch_number/batch_total_count*100
+        BatchInsetStatus = batch_number/batch_total_count*100
+        console.log(BatchInsetStatus)
+        // req.session.emailInsertStatus = BatchInsetStatus
+        // res.cookie('emailInsertStatus',BatchInsetStatus)
+        await DbClient.addUserStatus(user_email, BatchInsetStatus)
         batch_number = batch_number+1
+        await sleep(5000); 
+        console.log("sleeping 5 sec")
       }
       return true
     
